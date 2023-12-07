@@ -44,6 +44,9 @@ export async function GET() {
     return NextResponse.json(posts);
   } catch (error) {
     console.log("Error while Getting POST", error);
-    return NextResponse.json({ error });
+    return NextResponse.json(
+      { message: "Some error occured" },
+      { status: 500 }
+    );
   }
 }

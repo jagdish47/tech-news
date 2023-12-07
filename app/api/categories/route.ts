@@ -7,6 +7,6 @@ export async function GET() {
     return NextResponse.json(categories);
   } catch (error) {
     console.log("Error Getting Data", error);
-    return NextResponse.json("Someting went wrong while Fetching");
+    return NextResponse.json("Something went wrong while Fetching");
   }
 }
