@@ -1,11 +1,32 @@
 "use client";
-import { categoriesData } from "@/data";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { TCategory } from "@/app/types";
+import { useRouter } from "next/navigation";
 
 export default function CreatePostForm() {
   let [link, setLink] = useState<string[]>([]);
   const [linkInput, setLinkInput] = useState("");
+
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
+  const [categories, setCategories] = useState<TCategory[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
+  const [publicId, setPublicId] = useState("");
+  const [error, setError] = useState("");
+
+  const router = useRouter();
+
+  useEffect(() => {
+    const fetchAllCategories = async () => {
+      const res = await fetch("api/categories");
+      const catNames = await res.json();
+      setCategories(catNames);
+    };
+
+    fetchAllCategories();
+  });
 
   const httpsRegex = /^https:\/\//;
 
@@ -22,13 +43,52 @@ export default function CreatePostForm() {
     setLink((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!title || !content) {
+      setError("Title and content are required.");
+      return;
+    }
+    try {
+      const res = await fetch("api/posts/", {
+        method: "POST",
+        headers: {
+          "Content-type": "application/json",
+        },
+        body: JSON.stringify({
+          title,
+          content,
+          link,
+          selectedCategory,
+          imageUrl,
+          publicId,
+        }),
+      });
+
+      if (res.ok) {
+        router.push("/dashboard");
+      }
+    } catch (error) {
+      console.error("Error Creating Post ", error);
+    }
+  };
+
   return (
     <div>
       <h1>Create Post</h1>
-      <form className="flex flex-col gap-2 ">
-        <input type="text" placeholder="Title" />
+      <form onSubmit={handleSubmit} className="flex flex-col gap-2 ">
+        <input
+          type="text"
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Title"
+        />
 
-        <input type="textarea" placeholder="Content" />
+        <input
+          type="textarea"
+          onChange={(e) => setContent(e.target.value)}
+          placeholder="Content"
+        />
 
         {link &&
           link.map((link, idx) => (
@@ -89,12 +149,15 @@ export default function CreatePostForm() {
           </button>
         </div>
 
-        <select className="p-3 rounded-md border appearance-none ">
+        <select
+          onChange={(e) => setSelectedCategory(e.target.value)}
+          className="p-3 rounded-md border appearance-none "
+        >
           <option value="">Select A Category</option>
-          {categoriesData &&
-            categoriesData.map((category) => (
-              <option key={category.id} value={category.name}>
-                {category.name}
+          {categories &&
+            categories.map((category) => (
+              <option key={category.id} value={category.catName}>
+                {category.catName}
               </option>
             ))}
         </select>
@@ -102,7 +165,7 @@ export default function CreatePostForm() {
         <button className="primary-btn" type="submit">
           Create Post
         </button>
-        <div className=" font-bold text-red-500">Error Message</div>
+        {error && <div className=" font-bold text-red-500">{error}</div>}
       </form>
     </div>
   );
